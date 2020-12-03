@@ -1,29 +1,20 @@
-const shortenUrl = async (token, url) => {
-  let data
-  const getIdOrganization = await fetch('https://api-ssl.bitly.com/v4/groups', {
-    method: 'GET',
-    headers: {
-      Authorization: `${token}`,
-      'Content-Type': 'application/json',
-    },
-  })
-  const results = await getIdOrganization.json()
-  data = results.groups[0].guid
+import { getGroups, shorten } from './lib/helpers'
 
-  return fetch(`https://api-ssl.bitly.com/v4/shorten`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      long_url: `${url}`,
-      domain: 'bit.ly',
-      group_guid: `${data}`,
-    }),
-  })
-    .then((response) => response.json())
-    .then((jsonData) => jsonData.link)
+
+class BitLyService {
+  constructor(token) {
+    this.token = token
+  }
+
+  async shorten(url) {
+    const getIdOrganization = await getGroups(this.token)
+    const results = await getIdOrganization.json()
+    const [groups] = results.groups
+    const orgId = groups.guid
+    const shortenedURL = await shorten(this.token, url, orgId)
+    const data = await shortenedURL.json()
+    return data.link
+  }
 }
 
-export default shortenUrl
+export default BitLyService
